@@ -2,11 +2,19 @@
 #include <allegro5/allegro_image.h>
 #include <iostream>
 
+enum Facing { // Needed for direction logic
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT
+};
+
 struct Player {
     float x, y;
     float speed;
     int screen_w, screen_h;
     ALLEGRO_BITMAP* sprite;
+    Facing facing;
 
 	// Function to move the player based on key input
     void move(int keycode);
@@ -53,7 +61,7 @@ int main() {
     }
 
 	// Set up player object in middle of screen
-    Player player = {SCREEN_W / 2, SCREEN_H / 2, 10.0f, SCREEN_W, SCREEN_H, player_bmp};
+    Player player = {SCREEN_W / 2, SCREEN_H / 2, 10.0f, SCREEN_W, SCREEN_H, player_bmp, UP};
     
     bool running = true, redraw = true;
     ALLEGRO_EVENT ev;
@@ -84,7 +92,30 @@ int main() {
         if (redraw && al_is_event_queue_empty(event_queue)) {
             redraw = false;
             al_draw_bitmap(bg, 0, 0, 0);
-            al_draw_bitmap(player.sprite, player.x, player.y, 0);
+
+			// Draw player at its position with rotation based on facing direction
+            float cx = al_get_bitmap_width(player.sprite) / 2.0f;
+            float cy = al_get_bitmap_height(player.sprite) / 2.0f;
+            float draw_x = player.x + cx;
+            float draw_y = player.y + cy;
+
+            float angle = 0.0f;
+            switch (player.facing) {
+                case UP:    
+                    angle = 0.0f; 
+                    break;
+                case RIGHT: 
+                    angle = ALLEGRO_PI / 2; 
+                    break;
+                case DOWN:  
+                    angle = ALLEGRO_PI; 
+                    break;
+                case LEFT:  
+                    angle = -ALLEGRO_PI / 2; 
+                    break;
+            }
+            al_draw_rotated_bitmap(player.sprite, cx, cy, draw_x, draw_y, angle, 0);
+
             al_flip_display();
         }
     }
@@ -103,15 +134,19 @@ void Player::move(int keycode){
     switch (keycode) {
     case ALLEGRO_KEY_LEFT:
         x -= speed;
+		facing = LEFT;
         break;
     case ALLEGRO_KEY_RIGHT:
         x += speed;
+		facing = RIGHT;
         break;
     case ALLEGRO_KEY_UP:
         y -= speed;
+		facing = UP;
         break;
     case ALLEGRO_KEY_DOWN:
         y += speed;
+		facing = DOWN;
         break;
     }
     // Ensure player stays within screen bounds
